@@ -410,10 +410,10 @@ struct app_params {
 	char ul_iface_name[MAX_LEN];
 	char dl_iface_name[MAX_LEN];
 	enum dp_config spgw_cfg;
-	struct ether_addr s1u_ether_addr;		/* s1u mac addr */
-	struct ether_addr s5s8_sgwu_ether_addr;	/* s5s8_sgwu mac addr */
-	struct ether_addr s5s8_pgwu_ether_addr;	/* s5s8_pgwu mac addr */
-	struct ether_addr sgi_ether_addr;		/* sgi mac addr */
+	struct rte_ether_addr s1u_ether_addr;		/* s1u mac addr */
+	struct rte_ether_addr s5s8_sgwu_ether_addr;	/* s5s8_sgwu mac addr */
+	struct rte_ether_addr s5s8_pgwu_ether_addr;	/* s5s8_pgwu mac addr */
+	struct rte_ether_addr sgi_ether_addr;		/* sgi mac addr */
 
 #ifdef SGX_CDR
 	const char *dealer_in_ip;		/* dealerIn ip */
@@ -433,11 +433,11 @@ struct app_params {
 extern struct app_params app;
 
 /** ethernet addresses of ports */
-struct ether_addr ports_eth_addr[RTE_MAX_ETHPORTS];
+struct rte_ether_addr ports_eth_addr[RTE_MAX_ETHPORTS];
 
 #ifdef USE_AF_PACKET
 typedef struct dp_port_info {
-	struct ether_addr *eth_addr;
+	struct rte_ether_addr *eth_addr;
 	uint8_t ifup_state;
 	uint16_t mtu_size;
 	uint8_t promisc_state;
@@ -448,7 +448,7 @@ extern struct mnl_socket *mnl_sock;
 #endif
 
 /** ethernet addresses of ports */
-extern struct ether_addr ports_eth_addr[];
+extern struct rte_ether_addr ports_eth_addr[];
 
 /** ADC sponsored dns table msg payload */
 struct msg_adc {
@@ -555,6 +555,7 @@ struct ue_session_info {
 struct dp_sdf_per_bearer_info {
 	struct dp_pcc_rules pcc_info;						/**< PCC info of this bearer */
 	struct rte_meter_srtcm sdf_mtr_obj;					/**< meter object for this SDF flow */
+	struct rte_meter_srtcm_profile sdf_mtr_profile;     /**< meter profile for this SDF flow */
 	struct ipcan_dp_bearer_cdr sdf_cdr;					/**< per SDF bearer CDR*/
 	struct dp_session_info *bear_sess_info;  	/**< pointer to bearer this flow belongs to */
 	uint64_t sdf_mtr_drops;								/**< drop count due to sdf metering*/
@@ -596,7 +597,7 @@ extern struct rte_mempool *notify_msg_pool;
 
 extern int arp_icmp_get_dest_mac_address(const uint32_t ipaddr,
 		const uint32_t phy_port,
-		struct ether_addr *hw_addr,
+		struct rte_ether_addr *hw_addr,
 		uint32_t *nhip);
 
 /**

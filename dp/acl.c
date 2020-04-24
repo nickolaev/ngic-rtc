@@ -2,7 +2,6 @@
  * Copyright(c) 2017 Intel Corporation
  */
 
-#define _GNU_SOURCE     /* Expose declaration of tdestroy() */
 #include <search.h>
 
 #include "cdr.h"
@@ -29,9 +28,9 @@
 	*c = (unsigned char)((ip) >> 8 & 0xff);\
 	*d = (unsigned char)((ip) & 0xff);\
 } while (0)
-#define OFF_ETHHEAD	(sizeof(struct ether_hdr))
-#define OFF_IPV42PROTO (offsetof(struct ipv4_hdr, next_proto_id))
-#define OFF_IPV62PROTO (offsetof(struct ipv6_hdr, proto))
+#define OFF_ETHHEAD	(sizeof(struct rte_ether_hdr))
+#define OFF_IPV42PROTO (offsetof(struct rte_ipv4_hdr, next_proto_id))
+#define OFF_IPV62PROTO (offsetof(struct rte_ipv6_hdr, proto))
 #define MBUF_IPV4_2PROTO(m)	\
 	rte_pktmbuf_mtod_offset((m), uint8_t *, OFF_ETHHEAD + OFF_IPV42PROTO)
 #define MBUF_IPV6_2PROTO(m)	\
@@ -101,32 +100,32 @@ struct rte_acl_field_def ipv4_defs[NUM_FIELDS_IPV4] = {
 		.size = sizeof(uint32_t),
 		.field_index = SRC_FIELD_IPV4,
 		.input_index = RTE_ACL_IPV4VLAN_SRC,
-		.offset = offsetof(struct ipv4_hdr, src_addr) -
-			offsetof(struct ipv4_hdr, next_proto_id),
+		.offset = offsetof(struct rte_ipv4_hdr, src_addr) -
+			offsetof(struct rte_ipv4_hdr, next_proto_id),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = DST_FIELD_IPV4,
 		.input_index = RTE_ACL_IPV4VLAN_DST,
-		.offset = offsetof(struct ipv4_hdr, dst_addr) -
-			offsetof(struct ipv4_hdr, next_proto_id),
+		.offset = offsetof(struct rte_ipv4_hdr, dst_addr) -
+			offsetof(struct rte_ipv4_hdr, next_proto_id),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_RANGE,
 		.size = sizeof(uint16_t),
 		.field_index = SRCP_FIELD_IPV4,
 		.input_index = RTE_ACL_IPV4VLAN_PORTS,
-		.offset = sizeof(struct ipv4_hdr) -
-			offsetof(struct ipv4_hdr, next_proto_id),
+		.offset = sizeof(struct rte_ipv4_hdr) -
+			offsetof(struct rte_ipv4_hdr, next_proto_id),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_RANGE,
 		.size = sizeof(uint16_t),
 		.field_index = DSTP_FIELD_IPV4,
 		.input_index = RTE_ACL_IPV4VLAN_PORTS,
-		.offset = sizeof(struct ipv4_hdr) -
-			offsetof(struct ipv4_hdr, next_proto_id) +
+		.offset = sizeof(struct rte_ipv4_hdr) -
+			offsetof(struct rte_ipv4_hdr, next_proto_id) +
 			sizeof(uint16_t),
 	},
 };
@@ -159,80 +158,80 @@ struct rte_acl_field_def ipv6_defs[NUM_FIELDS_IPV6] = {
 		.size = sizeof(uint32_t),
 		.field_index = SRC1_FIELD_IPV6,
 		.input_index = SRC1_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, src_addr) -
-			offsetof(struct ipv6_hdr, proto),
+		.offset = offsetof(struct rte_ipv6_hdr, src_addr) -
+			offsetof(struct rte_ipv6_hdr, proto),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = SRC2_FIELD_IPV6,
 		.input_index = SRC2_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, src_addr) -
-			offsetof(struct ipv6_hdr, proto) + sizeof(uint32_t),
+		.offset = offsetof(struct rte_ipv6_hdr, src_addr) -
+			offsetof(struct rte_ipv6_hdr, proto) + sizeof(uint32_t),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = SRC3_FIELD_IPV6,
 		.input_index = SRC3_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, src_addr) -
-			offsetof(struct ipv6_hdr, proto) + 2 * sizeof(uint32_t),
+		.offset = offsetof(struct rte_ipv6_hdr, src_addr) -
+			offsetof(struct rte_ipv6_hdr, proto) + 2 * sizeof(uint32_t),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = SRC4_FIELD_IPV6,
 		.input_index = SRC4_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, src_addr) -
-			offsetof(struct ipv6_hdr, proto) + 3 * sizeof(uint32_t),
+		.offset = offsetof(struct rte_ipv6_hdr, src_addr) -
+			offsetof(struct rte_ipv6_hdr, proto) + 3 * sizeof(uint32_t),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = DST1_FIELD_IPV6,
 		.input_index = DST1_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, dst_addr)
-			- offsetof(struct ipv6_hdr, proto),
+		.offset = offsetof(struct rte_ipv6_hdr, dst_addr)
+			- offsetof(struct rte_ipv6_hdr, proto),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = DST2_FIELD_IPV6,
 		.input_index = DST2_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, dst_addr) -
-			offsetof(struct ipv6_hdr, proto) + sizeof(uint32_t),
+		.offset = offsetof(struct rte_ipv6_hdr, dst_addr) -
+			offsetof(struct rte_ipv6_hdr, proto) + sizeof(uint32_t),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = DST3_FIELD_IPV6,
 		.input_index = DST3_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, dst_addr) -
-			offsetof(struct ipv6_hdr, proto) + 2 * sizeof(uint32_t),
+		.offset = offsetof(struct rte_ipv6_hdr, dst_addr) -
+			offsetof(struct rte_ipv6_hdr, proto) + 2 * sizeof(uint32_t),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_MASK,
 		.size = sizeof(uint32_t),
 		.field_index = DST4_FIELD_IPV6,
 		.input_index = DST4_FIELD_IPV6,
-		.offset = offsetof(struct ipv6_hdr, dst_addr) -
-			offsetof(struct ipv6_hdr, proto) + 3 * sizeof(uint32_t),
+		.offset = offsetof(struct rte_ipv6_hdr, dst_addr) -
+			offsetof(struct rte_ipv6_hdr, proto) + 3 * sizeof(uint32_t),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_RANGE,
 		.size = sizeof(uint16_t),
 		.field_index = SRCP_FIELD_IPV6,
 		.input_index = SRCP_FIELD_IPV6,
-		.offset = sizeof(struct ipv6_hdr) -
-			offsetof(struct ipv6_hdr, proto),
+		.offset = sizeof(struct rte_ipv6_hdr) -
+			offsetof(struct rte_ipv6_hdr, proto),
 	},
 	{
 		.type = RTE_ACL_FIELD_TYPE_RANGE,
 		.size = sizeof(uint16_t),
 		.field_index = DSTP_FIELD_IPV6,
 		.input_index = SRCP_FIELD_IPV6,
-		.offset = sizeof(struct ipv6_hdr) -
-			offsetof(struct ipv6_hdr, proto) + sizeof(uint16_t),
+		.offset = sizeof(struct rte_ipv6_hdr) -
+			offsetof(struct rte_ipv6_hdr, proto) + sizeof(uint16_t),
 	},
 };
 
@@ -871,7 +870,7 @@ static int parse_ipv4_net(const char *in, uint32_t *addr, uint32_t *mask_len)
 	GET_CB_FIELD(in, d, 0, UINT8_MAX, '/');
 	GET_CB_FIELD(in, m, 0, sizeof(uint32_t) * CHAR_BIT, 0);
 
-	addr[0] = IPv4(a, b, c, d);
+	addr[0] = RTE_IPV4(a, b, c, d);
 	mask_len[0] = m;
 
 	return 0;
@@ -1638,7 +1637,7 @@ dp_adc_filter_entry_delete(struct dp_id dp_id,
  *	- -1 on failure
  */
 static int
-cb_sdf_filter_table_create(struct msgbuf *msg_payload)
+cb_sdf_filter_table_create(struct dp_ipc_msgbuf *msg_payload)
 {
 	return sdf_filter_table_create(msg_payload->dp_id,
 			msg_payload->msg_union.msg_table.max_elements);
@@ -1656,7 +1655,7 @@ cb_sdf_filter_table_create(struct msgbuf *msg_payload)
  *	- -1 on failure
  */
 static int
-cb_sdf_filter_table_delete(struct msgbuf *msg_payload)
+cb_sdf_filter_table_delete(struct dp_ipc_msgbuf *msg_payload)
 {
 	return sdf_filter_table_delete(msg_payload->dp_id);
 }
@@ -1673,7 +1672,7 @@ cb_sdf_filter_table_delete(struct msgbuf *msg_payload)
  *	- -1 on failure
  */
 static int
-cb_sdf_filter_entry_add(struct msgbuf *msg_payload)
+cb_sdf_filter_entry_add(struct dp_ipc_msgbuf *msg_payload)
 {
 	return sdf_filter_entry_add(msg_payload->dp_id,
 				msg_payload->msg_union.pkt_filter_entry);
@@ -1690,7 +1689,7 @@ cb_sdf_filter_entry_add(struct msgbuf *msg_payload)
  *	- -1 on failure
  */
 static int
-cb_sdf_filter_entry_delete(struct msgbuf *msg_payload)
+cb_sdf_filter_entry_delete(struct dp_ipc_msgbuf *msg_payload)
 {
 	return sdf_filter_entry_delete(msg_payload->dp_id,
 				msg_payload->msg_union.pkt_filter_entry);

@@ -55,14 +55,14 @@ static inline void epc_dl_set_port_id(struct rte_mbuf *m)
 	    (struct epc_meta_data *)RTE_MBUF_METADATA_UINT8_PTR(m,
 							META_DATA_OFFSET);
 	uint32_t *port_id_offset = &meta_data->port_id;
-	struct ipv4_hdr *ipv4_hdr =
-	    (struct ipv4_hdr *)&m_data[sizeof(struct ether_hdr)];
-	struct ether_hdr *eh = (struct ether_hdr *)&m_data[0];
+	struct rte_ipv4_hdr *ipv4_hdr =
+	    (struct rte_ipv4_hdr *)&m_data[sizeof(struct rte_ether_hdr)];
+	struct rte_ether_hdr *eh = (struct rte_ether_hdr *)&m_data[0];
 	uint32_t ipv4_packet;
 	/* Host Order ipv4_hdr->dst_addr */
 	uint32_t ho_addr;
 
-	ipv4_packet = (eh->ether_type == htons(ETHER_TYPE_IPv4));
+	ipv4_packet = (eh->ether_type == htons(RTE_ETHER_TYPE_IPV4));
 
 	if (unlikely(
 		     (m->ol_flags & PKT_RX_IP_CKSUM_MASK) ==

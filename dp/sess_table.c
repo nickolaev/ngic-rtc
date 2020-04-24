@@ -1459,7 +1459,7 @@ dp_ue_cdr_flush(struct dp_id dp_id, struct msg_ue_cdr *ue_cdr)
  *	- -1 Failure.
  */
 static int
-cb_ue_cdr_flush(struct msgbuf *msg_payload)
+cb_ue_cdr_flush(struct dp_ipc_msgbuf *msg_payload)
 {
 	return ue_cdr_flush(msg_payload->dp_id,
 			msg_payload->msg_union.ue_cdr);
@@ -1475,7 +1475,7 @@ cb_ue_cdr_flush(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_session_table_create(struct msgbuf *msg_payload)
+cb_session_table_create(struct dp_ipc_msgbuf *msg_payload)
 {
 	return session_table_create(msg_payload->dp_id,
 			msg_payload->msg_union.msg_table.max_elements);
@@ -1491,7 +1491,7 @@ cb_session_table_create(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_session_table_delete(struct msgbuf *msg_payload)
+cb_session_table_delete(struct dp_ipc_msgbuf *msg_payload)
 {
 	return session_table_delete(msg_payload->dp_id);
 }
@@ -1506,7 +1506,7 @@ cb_session_table_delete(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_session_create(struct msgbuf *msg_payload)
+cb_session_create(struct dp_ipc_msgbuf *msg_payload)
 {
 	return session_create(msg_payload->dp_id,
 			msg_payload->msg_union.sess_entry);
@@ -1522,7 +1522,7 @@ cb_session_create(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_session_modify(struct msgbuf *msg_payload)
+cb_session_modify(struct dp_ipc_msgbuf *msg_payload)
 {
 	return session_modify(msg_payload->dp_id,
 			msg_payload->msg_union.sess_entry);
@@ -1538,7 +1538,7 @@ cb_session_modify(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_session_delete(struct msgbuf *msg_payload)
+cb_session_delete(struct dp_ipc_msgbuf *msg_payload)
 {
 	return session_delete(msg_payload->dp_id,
 			msg_payload->msg_union.sess_entry);
@@ -1555,7 +1555,7 @@ cb_session_delete(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_ddn_ack(struct msgbuf *msg_payload)
+cb_ddn_ack(struct dp_ipc_msgbuf *msg_payload)
 {
 	return send_ddn_ack(msg_payload->dp_id,
 			msg_payload->msg_union.dl_ddn);

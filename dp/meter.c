@@ -33,42 +33,43 @@
 
 #if APP_MODE == APP_MODE_FWD
 
-#define FUNC_METER(a, b, c, d) (color, flow_id = flow_id,\
-			pkt_len = pkt_len, time = time)
-#define FUNC_CONFIG(a, b)
-#define PARAMS	app_srtcm_params
+#define FUNC_METER(m, p, time, pkt_len, pkt_color)	\
+({							\
+	void *mp = m;					\
+	void *pp = p;					\
+	mp = mp;					\
+	pp = pp;					\
+	time = time;					\
+	pkt_len = pkt_len;				\
+	pkt_color;					\
+})
+#define FUNC_CONFIG(a, b) 0
 #define FLOW_METER int
 
 #elif APP_MODE == APP_MODE_SRTCM_COLOR_BLIND
 
-#define FUNC_METER(a, b, c, d) rte_meter_srtcm_color_blind_check(a, b, c)
+#define FUNC_METER(m, p, time, pkt_len, pkt_color)	\
+	rte_meter_srtcm_color_blind_check(m, p, time, pkt_len)
 #define FUNC_CONFIG   rte_meter_srtcm_config
-#define PARAMS        app_srtcm_params
-#define PARAMS_AMBR   ambr_srtcm_params
 #define FLOW_METER    struct rte_meter_srtcm
 
 #elif (APP_MODE == APP_MODE_SRTCM_COLOR_AWARE)
 
 #define FUNC_METER    rte_meter_srtcm_color_aware_check
 #define FUNC_CONFIG   rte_meter_srtcm_config
-#define PARAMS        app_srtcm_params
-#define PARAMS_AMBR   ambr_srtcm_params
 #define FLOW_METER    struct rte_meter_srtcm
 
 #elif (APP_MODE == APP_MODE_TRTCM_COLOR_BLIND)
 
-#define FUNC_METER(a, b, c, d) rte_meter_trtcm_color_blind_check(a, b, c)
+#define FUNC_METER(m, p, time, pkt_len, pkt_color)	\
+	rte_meter_trtcm_color_blind_check(m, p, time, pkt_len)
 #define FUNC_CONFIG  rte_meter_trtcm_config
-#define PARAMS       app_trtcm_params
-#define PARAMS_AMBR   ambr_trtcm_params
 #define FLOW_METER   struct rte_meter_trtcm
 
 #elif (APP_MODE == APP_MODE_TRTCM_COLOR_AWARE)
 
-#define FUNC_METER   rte_meter_trtcm_color_aware_check
+#define FUNC_METER rte_meter_trtcm_color_aware_check
 #define FUNC_CONFIG  rte_meter_trtcm_config
-#define PARAMS       app_trtcm_params
-#define PARAMS_AMBR   ambr_trtcm_params
 #define FLOW_METER   struct rte_meter_trtcm
 
 #else
@@ -76,19 +77,19 @@
 #endif
 
 enum policer_action {
-	GREEN = e_RTE_METER_GREEN,
-	YELLOW = e_RTE_METER_YELLOW,
-	RED = e_RTE_METER_RED,
+	GREEN = RTE_COLOR_GREEN,
+	YELLOW = RTE_COLOR_YELLOW,
+	RED = RTE_COLOR_RED,
 	DROP = 3,
 };
 struct mtr_table {
 	char name[MAX_LEN];
-	struct rte_meter_srtcm_params *params;
+	struct rte_meter_srtcm_profile *profiles;
 	uint16_t num_entries;
 	uint16_t max_entries;
 };
 
-static enum policer_action policer_table[e_RTE_METER_COLORS][e_RTE_METER_COLORS] = {
+static enum policer_action policer_table[RTE_COLORS][RTE_COLORS] = {
 	{GREEN, YELLOW, RED},
 	{DROP, YELLOW, RED},
 	{DROP, DROP, RED}
@@ -126,22 +127,25 @@ app_set_pkt_color(uint8_t *pkt_data, enum policer_action color)
  * @return
  *	int - action to be performed on the packet
  */
-static int
-app_pkt_handle(struct rte_meter_srtcm *m, struct rte_mbuf *pkt,
+static inline int
+app_pkt_handle(struct rte_meter_srtcm *m,
+				struct rte_meter_srtcm_profile *profile,
+				struct rte_mbuf *pkt,
 				uint64_t time)
 {
 	uint8_t input_color, output_color;
 	uint8_t *pkt_data = rte_pktmbuf_mtod(pkt, uint8_t *);
-	uint32_t pkt_len = rte_pktmbuf_pkt_len(pkt) - sizeof(struct ether_hdr);
+	uint32_t pkt_len = rte_pktmbuf_pkt_len(pkt) -
+               sizeof(struct rte_ether_hdr);
 	enum policer_action action;
 
 	input_color = pkt_data[APP_PKT_COLOR_POS] & 0x3;
 	/* color input is not used for blind modes */
-	output_color =
-		(uint8_t) FUNC_METER(m,
-				 time,
-				 pkt_len,
-				 (enum rte_meter_color)input_color);
+	output_color = (uint8_t) FUNC_METER(m,
+		profile,
+		time,
+		pkt_len,
+		(enum rte_color) input_color);
 
 	/* Apply policing and set the output color */
 	action = policer_table[input_color][output_color];
@@ -170,10 +174,10 @@ mtr_table_create(struct mtr_table *mtr_tbl,
 	mtr_tbl->num_entries = 0;
 	mtr_tbl->max_entries = max_entries;
 	strncpy(mtr_tbl->name, table_name, MAX_LEN);
-	mtr_tbl->params = rte_zmalloc("params",
-			sizeof(struct rte_meter_srtcm_params) * max_entries,
+	mtr_tbl->profiles = rte_zmalloc("profiles",
+			sizeof(struct rte_meter_srtcm_profile) * max_entries,
 			RTE_CACHE_LINE_SIZE);
-	if (mtr_tbl->params == NULL)
+	if (mtr_tbl->profiles == NULL)
 		rte_panic("Meter table memory alloc fail");
 	RTE_LOG_DP(INFO, DP, "Meter table: %s created\n", mtr_tbl->name);
 }
@@ -190,7 +194,7 @@ mtr_table_create(struct mtr_table *mtr_tbl,
 static void
 mtr_table_destroy(struct mtr_table *mtr_tbl)
 {
-	rte_free(mtr_tbl->params);
+	rte_free(mtr_tbl->profiles);
 	RTE_LOG_DP(INFO, DP, "Meter table: %s destroyed\n", mtr_tbl->name);
 	memset(mtr_tbl, 0, sizeof(struct mtr_table));
 }
@@ -212,7 +216,7 @@ static void
 mtr_add_entry(struct mtr_table *mtr_tbl,
 		uint16_t mtr_profile_index, struct mtr_params *mtr_param)
 {
-	struct rte_meter_srtcm_params *app_srtcm_params;
+	struct rte_meter_srtcm_profile *app_srtcm_profile;
 
 	if (mtr_tbl->num_entries == mtr_tbl->max_entries) {
 		printf("MTR: Max entries reached\n");
@@ -223,10 +227,12 @@ mtr_add_entry(struct mtr_table *mtr_tbl,
 		return;
 	}
 
-	app_srtcm_params = &mtr_tbl->params[mtr_profile_index];
-	app_srtcm_params->cir = mtr_param->cir;
-	app_srtcm_params->cbs = mtr_param->cbs;
-	app_srtcm_params->ebs = mtr_param->ebs;
+	app_srtcm_profile = &mtr_tbl->params[mtr_profile_index];
+	if (rte_meter_srtcm_profile_config(app_srtcm_profile, mtr_param)) {
+		printf("MTR: could not configure profile\n");
+        return ret;
+	}
+
 	mtr_tbl->num_entries++;
 	RTE_LOG_DP(INFO, DP, "MTR_PROFILE ADD: index %d cir:%lu,"
 			" cbs:%lu, ebs:%lu\n",
@@ -248,36 +254,36 @@ mtr_add_entry(struct mtr_table *mtr_tbl,
 static void
 mtr_del_entry(struct mtr_table *mtr_tbl, uint16_t mtr_profile_index)
 {
-	struct rte_meter_srtcm_params *app_srtcm_params;
+	struct rte_meter_srtcm_profile *app_srtcm_profile;
 
 	if (mtr_profile_index >= mtr_tbl->max_entries) {
 		printf("MTR: profile id greater than max entries\n");
 		return;
 	}
 
-	app_srtcm_params = &mtr_tbl->params[mtr_profile_index];
-	app_srtcm_params->cir = 0;
-	app_srtcm_params->cbs = 0;
-	app_srtcm_params->ebs = 0;
+	app_srtcm_profile = &mtr_tbl->profiles[mtr_profile_index];
+	app_srtcm_profile->cbs = 0;
+	app_srtcm_profile->ebs = 0;
 	mtr_tbl->num_entries--;
 }
 
 int
-mtr_cfg_entry(int msg_id, struct rte_meter_srtcm *msg_payload)
+mtr_cfg_entry(int msg_id, struct rte_meter_srtcm *m,
+				struct rte_meter_srtcm_profile *profile)
 {
 	struct rte_meter_srtcm *m;
 	struct mtr_table *mtr_tbl = &mtr_profile_tbl;
-	struct rte_meter_srtcm_params *app_srtcm_params =
-					&mtr_tbl->params[msg_id];
+	struct rte_meter_srtcm_params *app_srtcm_profile =
+					&mtr_tbl->profiles[msg_id];
 	m = (struct rte_meter_srtcm *)msg_payload;
 	/* NOTE: rte_malloc will be replaced by simple ring_alloc in future*/
 
-	if ((msg_id == 0) || (app_srtcm_params->cir == 0)) {
+	if ((msg_id == 0) || (app_srtcm_profile->cbs == 0)) {
 		memset(m, 0, sizeof(struct rte_meter_srtcm));
 		return -1;
 	}
 
-	rte_meter_srtcm_config(m, &mtr_tbl->params[msg_id]);
+	rte_meter_srtcm_config(m, app_srtcm_profile);
 
 	RTE_LOG_DP(DEBUG, DP, "Configuring MTR index %d\n", msg_id);
 	if ((m)->cir_period == 0)
@@ -315,7 +321,7 @@ sdf_mtr_process_pkt(struct dp_sdf_per_bearer_info **sdf_info,
 				" MTR not configured!!!\n");
 			continue;
 		}
-		action = app_pkt_handle(m, pkt[i], current_time);
+		action = app_pkt_handle(m, mtr_profile_tbl->profiles[], pkt[i], current_time);
 		if ((action == RED)
 			|| (action == YELLOW)
 			|| (action == DROP)) {
@@ -442,7 +448,7 @@ dp_meter_profile_entry_delete(struct dp_id dp_id, struct mtr_entry *entry)
  *	- -1 Failure.
  */
 static int
-cb_meter_profile_table_create(struct msgbuf *msg_payload)
+cb_meter_profile_table_create(struct dp_ipc_msgbuf *msg_payload)
 {
 	return meter_profile_table_create(msg_payload->dp_id,
 				msg_payload->msg_union.msg_table.max_elements);
@@ -458,7 +464,7 @@ cb_meter_profile_table_create(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_meter_profile_table_delete(struct msgbuf *msg_payload)
+cb_meter_profile_table_delete(struct dp_ipc_msgbuf *msg_payload)
 {
 	return meter_profile_table_delete(msg_payload->dp_id);
 }
@@ -473,7 +479,7 @@ cb_meter_profile_table_delete(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_meter_profile_entry_add(struct msgbuf *msg_payload)
+cb_meter_profile_entry_add(struct dp_ipc_msgbuf *msg_payload)
 {
 	return meter_profile_entry_add(msg_payload->dp_id,
 					msg_payload->msg_union.mtr_entry);
@@ -489,7 +495,7 @@ cb_meter_profile_entry_add(struct msgbuf *msg_payload)
  *	- -1 Failure.
  */
 static int
-cb_meter_profile_entry_delete(struct msgbuf *msg_payload)
+cb_meter_profile_entry_delete(struct dp_ipc_msgbuf *msg_payload)
 {
 	return meter_profile_entry_delete(msg_payload->dp_id,
 					msg_payload->msg_union.mtr_entry);

@@ -2,7 +2,7 @@
  * Copyright(c) 2017 Intel Corporation
  */
 
-#define _GNU_SOURCE     /* Expose declaration of strptime() */
+// #define _GNU_SOURCE     /* Expose declaration of strptime() */
 #include <time.h>
 #include <openssl/md5.h>
 #include <sys/stat.h>
